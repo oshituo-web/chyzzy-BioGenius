@@ -1,6 +1,6 @@
 'use client';
 
-import { FileImage, UploadCloud } from 'lucide-react';
+import { FileImage, UploadCloud, Camera } from 'lucide-react';
 import React, { useCallback, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ export default function ImageUploadForm({ onImageUpload, disabled }: ImageUpload
   const { toast } = useToast();
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = (file: File): boolean => {
     if (!ALLOWED_TYPES.includes(file.type)) {
@@ -89,21 +90,40 @@ export default function ImageUploadForm({ onImageUpload, disabled }: ImageUpload
     >
       <UploadCloud className={cn('w-12 h-12 mb-4 transition-colors', isDragging ? 'text-primary' : 'text-muted-foreground')} />
       <p className="text-center text-muted-foreground mb-4">
-        <span className="font-semibold text-primary">Drag & drop</span> an image here, or click to upload.
+        <span className="font-semibold text-primary">Drag & drop</span> an image here, or use the buttons below.
       </p>
-      <Button
-        onClick={() => fileInputRef.current?.click()}
-        disabled={disabled}
-        variant="secondary"
-      >
-        <FileImage className="w-4 h-4 mr-2" />
-        Select Image
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={disabled}
+          variant="secondary"
+        >
+          <FileImage className="w-4 h-4 mr-2" />
+          Select Image
+        </Button>
+        <Button
+          onClick={() => cameraInputRef.current?.click()}
+          disabled={disabled}
+          variant="secondary"
+        >
+          <Camera className="w-4 h-4 mr-2" />
+          Scan Image
+        </Button>
+      </div>
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleInputChange}
         accept={ALLOWED_TYPES.join(',')}
+        className="hidden"
+        disabled={disabled}
+      />
+      <input
+        type="file"
+        ref={cameraInputRef}
+        onChange={handleInputChange}
+        accept="image/*"
+        capture="environment"
         className="hidden"
         disabled={disabled}
       />
