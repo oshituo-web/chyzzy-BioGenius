@@ -92,14 +92,15 @@ export default function ImageUploadForm({ onImageUpload, disabled }: ImageUpload
         onDrop={handleDrop}
       >
         <UploadCloud className={cn('w-12 h-12 mb-4 transition-colors', isDragging ? 'text-primary' : 'text-muted-foreground')} />
-        <p className="text-center text-muted-foreground mb-4">
+        <p className="text-center text-muted-foreground mb-4 text-sm sm:text-base">
           <span className="font-semibold text-primary">Drag & drop</span> an image here, or use the buttons below.
         </p>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <Button
             onClick={() => fileInputRef.current?.click()}
             disabled={disabled}
             variant="secondary"
+            className='w-full'
           >
             <FileImage className="w-4 h-4 mr-2" />
             Select Image
@@ -108,6 +109,7 @@ export default function ImageUploadForm({ onImageUpload, disabled }: ImageUpload
             onClick={() => cameraInputRef.current?.click()}
             disabled={disabled}
             variant="secondary"
+            className='w-full'
           >
             <Camera className="w-4 h-4 mr-2" />
             Scan Image
