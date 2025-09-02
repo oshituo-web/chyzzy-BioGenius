@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowRight, LoaderCircle } from 'lucide-react';
+import { ArrowRight, LoaderCircle, RefreshCcw } from 'lucide-react';
 import Image from 'next/image';
 import { nanoid } from 'nanoid';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -32,6 +32,19 @@ const followUpSchema = z.object({
   question: z.string().min(1, 'Please enter a question.'),
 });
 
+const initialMessages: Message[] = [
+  {
+    id: 'initial',
+    role: 'assistant',
+    content: (
+      <div className="space-y-2">
+        <p>Welcome to BioGenius!</p>
+        <p>Upload an image of a plant, animal, or insect, and I&apos;ll identify it for you.</p>
+      </div>
+    ),
+  },
+];
+
 export default function ChatInterface() {
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -50,24 +63,20 @@ export default function ChatInterface() {
     }
   }, []);
 
+  const handleReset = useCallback(() => {
+    setMessages(initialMessages);
+    setCurrentOrganism(null);
+    form.reset();
+    setIsLoading(false);
+  }, [form]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
   useEffect(() => {
-    setMessages([
-      {
-        id: nanoid(),
-        role: 'assistant',
-        content: (
-          <div className="space-y-2">
-            <p>Welcome to BioGenius!</p>
-            <p>Upload an image of a plant, animal, or insect, and I&apos;ll identify it for you.</p>
-          </div>
-        ),
-      },
-    ]);
-  }, []);
+    handleReset();
+  }, [handleReset]);
 
   const handleImageUpload = async (file: File) => {
     setIsLoading(true);
@@ -234,7 +243,8 @@ export default function ChatInterface() {
     setIsLoading(false);
   };
 
-  const showUploadForm = !messages.some(msg => msg.role === 'user');
+  const showUploadForm = !currentOrganism && !messages.some(msg => msg.role === 'user' && msg.id !== 'initial');
+
 
   return (
     <div className="flex flex-col w-full max-w-2xl h-full mx-auto bg-card rounded-lg shadow-2xl border border-primary/20">
@@ -259,7 +269,7 @@ export default function ChatInterface() {
       </ScrollArea>
       
       <div className="p-4 border-t border-primary/20">
-        {showUploadForm && !isLoading ? (
+        {showUploadForm ? (
           <ImageUploadForm onImageUpload={handleImageUpload} disabled={isLoading} />
         ) : (
           <Form {...form}>
@@ -288,6 +298,12 @@ export default function ChatInterface() {
                 <ArrowRight className="w-5 h-5" />
                 <span className="sr-only">Send</span>
               </Button>
+              {currentOrganism && (
+                <Button type="button" size="icon" variant="outline" onClick={handleReset} disabled={isLoading}>
+                  <RefreshCcw className="w-5 h-5" />
+                  <span className="sr-only">Start Over</span>
+                </Button>
+              )}
             </form>
           </Form>
         )}
