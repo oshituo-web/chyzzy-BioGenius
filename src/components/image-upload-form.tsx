@@ -14,7 +14,7 @@ interface ImageUploadFormProps {
 }
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
 export default function ImageUploadForm({ onImageUpload, disabled }: ImageUploadFormProps) {
   const { toast } = useToast();
@@ -36,7 +36,7 @@ export default function ImageUploadForm({ onImageUpload, disabled }: ImageUpload
       toast({
         variant: 'destructive',
         title: 'File Too Large',
-        description: 'Please upload an image smaller than 5MB.',
+        description: 'Please upload an image smaller than 10MB.',
       });
       return false;
     }
@@ -130,7 +130,7 @@ export default function ImageUploadForm({ onImageUpload, disabled }: ImageUpload
           className="hidden"
           disabled={disabled}
         />
-        <p className="text-xs text-muted-foreground mt-4">PNG, JPG, WEBP up to 5MB</p>
+        <p className="text-xs text-muted-foreground mt-4">PNG, JPG, WEBP up to 10MB</p>
       </div>
 
       <div className="relative">
