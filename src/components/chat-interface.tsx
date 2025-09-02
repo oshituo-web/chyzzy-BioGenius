@@ -78,7 +78,7 @@ export default function ChatInterface() {
     handleReset();
   }, [handleReset]);
 
-  const handleImageUpload = async (file: File) => {
+  const handleImageUpload = async (file: File, region?: string) => {
     setIsLoading(true);
     const reader = new FileReader();
 
@@ -88,18 +88,21 @@ export default function ChatInterface() {
         id: nanoid(),
         role: 'user',
         content: (
-          <Image
-            src={photoDataUri}
-            alt="Uploaded organism"
-            width={200}
-            height={200}
-            className="rounded-lg"
-          />
+          <div className='flex flex-col gap-2'>
+            <Image
+              src={photoDataUri}
+              alt="Uploaded organism"
+              width={200}
+              height={200}
+              className="rounded-lg"
+            />
+            {region && <p className='text-sm'>Region: {region}</p>}
+          </div>
         ),
       };
       setMessages((prev) => [...prev, userMessage]);
 
-      const { data, error } = await identifyOrganismAction({ photoDataUri });
+      const { data, error } = await identifyOrganismAction({ photoDataUri, region });
 
       if (error) {
         toast({

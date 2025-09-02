@@ -16,11 +16,12 @@ const IdentifyOrganismFromImageInputSchema = z.object({
     .describe(
       "A photo of an organism, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'"
     ),
+  region: z.string().optional().describe('The geographical region where the organism was found.'),
 });
 export type IdentifyOrganismFromImageInput = z.infer<typeof IdentifyOrganismFromImageInputSchema>;
 
 const IdentifyOrganismFromImageOutputSchema = z.object({
-  commonName: z.string().describe('The common name of the organism.'),
+  commonName: z.string().describe('The common name of the organism, specific to the provided region if available.'),
   scientificName: z.string().describe('The scientific name of the organism.'),
   species: z.string().describe('The species of the organism.'),
   family: z.string().describe('The family of the organism.'),
@@ -40,6 +41,9 @@ const prompt = ai.definePrompt({
   prompt: `You are an expert biologist specializing in identifying living organisms from images.
 
 You will use this information to identify the organism, and extract key information about it, including common name, scientific name, species, family, key features, and interesting facts.
+{{#if region}}
+The user has specified the region as {{region}}. Use this information to provide a more accurate common name for that region if available.
+{{/if}}
 
 Analyze the following image and extract the required information.
 
