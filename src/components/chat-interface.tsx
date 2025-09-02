@@ -112,7 +112,7 @@ export default function ChatInterface() {
         setCurrentOrganism(data);
         const textForTts = `I've identified this as a ${data.commonName}. Scientific name: ${
           data.scientificName
-        }. Key features include: ${data.keyFeatures.join(', ')}. Some interesting facts are: ${data.interestingFacts.join(
+        }. It belongs to the ${data.family} family and ${data.species} species. Key features include: ${data.keyFeatures.join(', ')}. Some interesting facts are: ${data.interestingFacts.join(
           ', '
         )}.`;
 
@@ -127,6 +127,16 @@ export default function ChatInterface() {
                 <CardDescription className="italic">{data.scientificName}</CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="grid grid-cols-2 gap-2 text-sm mb-4">
+                  <div>
+                    <p className="font-semibold">Family</p>
+                    <p>{data.family}</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold">Species</p>
+                    <p>{data.species}</p>
+                  </div>
+                </div>
                 <Accordion type="single" collapsible className="w-full">
                   <AccordionItem value="features">
                     <AccordionTrigger>Key Features</AccordionTrigger>

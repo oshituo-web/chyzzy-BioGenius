@@ -14,7 +14,7 @@ const IdentifyOrganismFromImageInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
-      "A photo of an organism, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "A photo of an organism, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'"
     ),
 });
 export type IdentifyOrganismFromImageInput = z.infer<typeof IdentifyOrganismFromImageInputSchema>;
@@ -22,6 +22,8 @@ export type IdentifyOrganismFromImageInput = z.infer<typeof IdentifyOrganismFrom
 const IdentifyOrganismFromImageOutputSchema = z.object({
   commonName: z.string().describe('The common name of the organism.'),
   scientificName: z.string().describe('The scientific name of the organism.'),
+  species: z.string().describe('The species of the organism.'),
+  family: z.string().describe('The family of the organism.'),
   keyFeatures: z.array(z.string()).describe('A list of key features of the organism.'),
   interestingFacts: z.array(z.string()).describe('A list of interesting facts about the organism.'),
 });
@@ -37,7 +39,7 @@ const prompt = ai.definePrompt({
   output: {schema: IdentifyOrganismFromImageOutputSchema},
   prompt: `You are an expert biologist specializing in identifying living organisms from images.
 
-You will use this information to identify the organism, and extract key information about it, including common name, scientific name, key features, and interesting facts.
+You will use this information to identify the organism, and extract key information about it, including common name, scientific name, species, family, key features, and interesting facts.
 
 Analyze the following image and extract the required information.
 
