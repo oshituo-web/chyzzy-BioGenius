@@ -3,3 +3,4 @@ config();
 
 import '@/ai/flows/identify-organism-from-image.ts';
 import '@/ai/flows/answer-follow-up-questions-about-organism.ts';
+import '@/ai/flows/generate-speech-from-text.ts';

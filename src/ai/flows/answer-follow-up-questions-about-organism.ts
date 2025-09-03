@@ -16,7 +16,7 @@ import {z} from 'genkit';
 const AnswerFollowUpQuestionsInputSchema = z.object({
   organismName: z.string().describe('The common name of the identified organism.'),
   question: z.string().describe('The follow-up question about the organism.'),
-  previousAnswer: z.string().optional().describe('The previous answer given by the chatbot.'),
+  previousAnswer: z.string().optional().describe('The context from the previous answers in the conversation.'),
 });
 export type AnswerFollowUpQuestionsInput = z.infer<typeof AnswerFollowUpQuestionsInputSchema>;
 
@@ -35,9 +35,13 @@ const prompt = ai.definePrompt({
   output: {schema: AnswerFollowUpQuestionsOutputSchema},
   prompt: `You are a knowledgeable AI chatbot specializing in providing information about living organisms.
 
-You have already identified the organism as {{organismName}} and provided the following information in the previous answer: {{previousAnswer}}.
+You are continuing a conversation about {{organismName}}.
+{{#if previousAnswer}}
+The previous conversation context is:
+{{previousAnswer}}
+{{/if}}
 
-Now, answer the following follow-up question about the organism, maintaining context from the initial identification. Be concise and informative.
+Now, answer the following follow-up question about the organism, maintaining context from the conversation. Be concise and informative.
 
 Question: {{question}}`,
 });

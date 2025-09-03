@@ -1,11 +1,10 @@
 'use client';
 
-import { PauseCircle, PlayCircle } from 'lucide-react';
-import React from 'react';
+import { PauseCircle, PlayCircle, LoaderCircle } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { useSpeech } from '@/hooks/use-speech';
 import { cn } from '@/lib/utils';
 import { BotIcon } from './icons';
 
@@ -13,21 +12,60 @@ interface ChatMessageProps {
   id: string;
   role: 'user' | 'assistant';
   content: React.ReactNode;
-  textForTts?: string;
+  audioData?: string;
 }
 
-export default function ChatMessage({ id, role, content, textForTts }: ChatMessageProps) {
-  const { isPlaying, isPaused, speak, togglePlayPause, cancel } = useSpeech(textForTts || '', {
-    onEnd: () => {},
-  });
+export default function ChatMessage({ id, role, content, audioData }: ChatMessageProps) {
   const isAssistant = role === 'assistant';
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
 
-  const handlePlay = () => {
-    if (!textForTts) return;
-    if (isPlaying || isPaused) {
-      togglePlayPause();
+  useEffect(() => {
+    if (isAssistant && !audioData) {
+      setIsAudioLoading(true);
     } else {
-      speak();
+      setIsAudioLoading(false);
+    }
+  }, [isAssistant, audioData]);
+  
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handlePlay = () => {
+      setIsPlaying(true);
+      setIsPaused(false);
+    };
+    const handlePause = () => {
+      setIsPlaying(false);
+      setIsPaused(true);
+    };
+    const handleEnded = () => {
+      setIsPlaying(false);
+      setIsPaused(false);
+    };
+
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('ended', handleEnded);
+
+    return () => {
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('ended', handleEnded);
+    };
+  }, [audioRef]);
+
+
+  const handlePlayToggle = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
     }
   };
 
@@ -49,21 +87,25 @@ export default function ChatMessage({ id, role, content, textForTts }: ChatMessa
         )}
       >
         {content}
-        {isAssistant && textForTts && (
+        {isAssistant && (
           <div className="mt-2 sm:mt-3">
+             {audioData && <audio ref={audioRef} src={audioData} className="hidden" />}
             <Button
               variant="ghost"
               size="sm"
-              onClick={handlePlay}
-              className="-ml-2 h-auto p-1 text-primary hover:bg-primary/10"
+              onClick={handlePlayToggle}
+              disabled={!audioData}
+              className="-ml-2 h-auto p-1 text-primary hover:bg-primary/10 disabled:opacity-50"
             >
-              {isPlaying ? (
+              {isAudioLoading ? (
+                 <LoaderCircle className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+              ) : isPlaying ? (
                 <PauseCircle className="h-4 w-4 sm:h-5 sm:w-5" />
               ) : (
                 <PlayCircle className="h-4 w-4 sm:h-5 sm:w-5" />
               )}
               <span className="ml-1 sm:ml-2 text-xs font-medium">
-                {isPlaying ? 'Pause' : isPaused ? 'Resume' : 'Play Audio'}
+                {isAudioLoading ? 'Loading Audio...' : isPlaying ? 'Pause' : isPaused ? 'Resume' : 'Play Audio'}
               </span>
             </Button>
           </div>
