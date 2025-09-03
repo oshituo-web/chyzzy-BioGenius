@@ -176,7 +176,6 @@ export default function ChatInterface() {
           canvas.width = width;
           canvas.height = height;
 
-          // Subtle, automated enhancement
           ctx.filter = 'brightness(110%) contrast(110%)';
           ctx.drawImage(img, 0, 0, width, height);
           
@@ -210,22 +209,21 @@ export default function ChatInterface() {
     };
     setMessages((prev) => [...prev, userMessage]);
 
-    // Primary Analysis
-    let { data, error } = await identifyOrganismAction({ photoDataUri: dataUri, region });
-
-    // Conditional Enhancement & Re-analysis
-    if (error) {
-      console.log('Primary analysis failed. Attempting enhancement...');
-      try {
-        const enhancedPhotoDataUri = await enhanceImage(file);
-        const secondAttempt = await identifyOrganismAction({ photoDataUri: enhancedPhotoDataUri, region });
-        data = secondAttempt.data;
-        error = secondAttempt.error;
-      } catch (enhancementError) {
-         console.error('Image enhancement failed:', enhancementError);
-         error = 'Failed to process the image. Please try a different one.';
-      }
+    let enhancedPhotoDataUri: string;
+    try {
+      enhancedPhotoDataUri = await enhanceImage(file);
+    } catch (enhancementError) {
+      console.error('Image enhancement failed:', enhancementError);
+      setIsLoading(false);
+      toast({
+        variant: 'destructive',
+        title: 'Image Processing Failed',
+        description: 'Could not process the image. Please try a different one.',
+      });
+      return;
     }
+    
+    const { data, error } = await identifyOrganismAction({ photoDataUri: enhancedPhotoDataUri, region });
 
     setIsLoading(false);
     
@@ -298,7 +296,6 @@ export default function ChatInterface() {
       };
       setMessages((prev) => [...prev, assistantMessage]);
       
-      // Generate speech
       const speechResult = await generateSpeechAction({ text: data.answer });
       if (speechResult.data) {
         setMessages((prev) =>
