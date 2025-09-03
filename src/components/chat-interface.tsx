@@ -148,7 +148,7 @@ export default function ChatInterface() {
       if (speechResult.data) {
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.id === assistantMessageId ? { ...msg, audioData: speechResult.data.audio, audioAutoPlay: true } : msg
+            msg.id === assistantMessageId ? { ...msg, audioData: speechResult.data.audio, audioAutoPlay: false } : msg
           )
         );
       } else if (speechResult.error) {
@@ -311,7 +311,7 @@ export default function ChatInterface() {
       if (speechResult.data) {
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.id === assistantMessageId ? { ...msg, audioData: speechResult.data.audio, audioAutoPlay: true } : msg
+            msg.id === assistantMessageId ? { ...msg, audioData: speechResult.data.audio, audioAutoPlay: false } : msg
           )
         );
       } else if (speechResult.error) {

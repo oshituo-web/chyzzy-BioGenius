@@ -64,7 +64,7 @@ export default function ChatMessage({ id, role, content, audioData, audioAutoPla
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [audioRef]);
+  }, [audioRef, audioData]); // Rerun when audioData is available
 
 
   const handlePlayToggle = () => {
@@ -97,7 +97,7 @@ export default function ChatMessage({ id, role, content, audioData, audioAutoPla
         {content}
         {isAssistant && (
           <div className="mt-2 sm:mt-3">
-             {audioData && <audio ref={audioRef} src={audioData} className="hidden" />}
+             {audioData && <audio ref={audioRef} src={audioData} className="hidden" preload="auto" />}
             <Button
               variant="ghost"
               size="sm"
