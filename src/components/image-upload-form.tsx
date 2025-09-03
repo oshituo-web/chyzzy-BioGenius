@@ -1,39 +1,28 @@
 'use client';
 
-import { FileImage, UploadCloud, Camera, Globe, X, Send } from 'lucide-react';
-import Image from 'next/image';
+import { FileImage, UploadCloud, Camera, Globe } from 'lucide-react';
 import React, { useCallback, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Input } from './ui/input';
-import { Slider } from './ui/slider';
 
 interface ImageUploadFormProps {
-  onImageUpload: (file: File, enhancedDataUrl: string, region?: string) => void;
+  onImageUpload: (file: File, dataUri: string, region?: string) => void;
   disabled: boolean;
 }
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
-const MAX_DIMENSION = 1024;
 
 export default function ImageUploadForm({ onImageUpload, disabled }: ImageUploadFormProps) {
   const { toast } = useToast();
   const [isDragging, setIsDragging] = useState(false);
   const [region, setRegion] = useState('');
-  const [originalFile, setOriginalFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [brightness, setBrightness] = useState(100);
-  const [contrast, setContrast] = useState(100);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const validateFile = (file: File): boolean => {
     if (!ALLOWED_TYPES.includes(file.type)) {
@@ -55,86 +44,21 @@ export default function ImageUploadForm({ onImageUpload, disabled }: ImageUpload
     return true;
   };
 
-  const processAndPreviewImage = (file: File) => {
+  const processAndUploadImage = (file: File) => {
     if (!validateFile(file)) return;
-    setOriginalFile(file);
     
     const reader = new FileReader();
     reader.onload = (e) => {
-      setPreviewUrl(e.target?.result as string);
-      setIsModalOpen(true);
-      setBrightness(100);
-      setContrast(100);
+      const dataUri = e.target?.result as string;
+      onImageUpload(file, dataUri, region);
     };
     reader.readAsDataURL(file);
   };
 
   const handleFileSelect = (file: File | null | undefined) => {
     if (file) {
-      processAndPreviewImage(file);
+      processAndUploadImage(file);
     }
-  };
-  
-  const applyEnhancements = useCallback(() => {
-    if (!previewUrl || !canvasRef.current) return;
-
-    const img = document.createElement('img');
-    img.src = previewUrl;
-    img.onload = () => {
-      const canvas = canvasRef.current!;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      
-      let { width, height } = img;
-      if (width > height) {
-        if (width > MAX_DIMENSION) {
-          height *= MAX_DIMENSION / width;
-          width = MAX_DIMENSION;
-        }
-      } else {
-        if (height > MAX_DIMENSION) {
-          width *= MAX_DIMENSION / height;
-          height = MAX_DIMENSION;
-        }
-      }
-      canvas.width = width;
-      canvas.height = height;
-
-      ctx.filter = `brightness(${brightness}%) contrast(${contrast}%)`;
-      ctx.drawImage(img, 0, 0, width, height);
-    };
-  }, [previewUrl, brightness, contrast]);
-  
-  React.useEffect(() => {
-    applyEnhancements();
-  }, [applyEnhancements]);
-
-
-  const handleSend = () => {
-    if (!originalFile || !canvasRef.current) return;
-
-    setIsProcessing(true);
-    canvasRef.current.toBlob(
-      (blob) => {
-        if (blob) {
-          const enhancedFile = new File([blob], originalFile.name, { type: originalFile.type });
-          const enhancedDataUrl = canvasRef.current!.toDataURL(originalFile.type, 0.9);
-          onImageUpload(enhancedFile, enhancedDataUrl, region);
-          setIsModalOpen(false);
-          setOriginalFile(null);
-          setPreviewUrl(null);
-        } else {
-           toast({
-            variant: 'destructive',
-            title: 'Processing Failed',
-            description: 'Could not process the image. Please try again.',
-          });
-        }
-        setIsProcessing(false);
-      },
-      originalFile.type,
-      0.9 // Compression quality
-    );
   };
 
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
@@ -236,35 +160,6 @@ export default function ImageUploadForm({ onImageUpload, disabled }: ImageUpload
           />
         </div>
       </div>
-
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[480px]">
-          <DialogHeader>
-            <DialogTitle>Enhance & Preview</DialogTitle>
-          </DialogHeader>
-          <div className="flex justify-center items-center my-4">
-            <canvas ref={canvasRef} className="max-w-full h-auto rounded-lg shadow-md" />
-          </div>
-          <div className="space-y-4">
-            <div className="grid gap-2">
-              <label htmlFor="brightness" className="text-sm font-medium">Brightness</label>
-              <Slider id="brightness" min={50} max={150} value={[brightness]} onValueChange={(v) => setBrightness(v[0])} />
-            </div>
-            <div className="grid gap-2">
-              <label htmlFor="contrast" className="text-sm font-medium">Contrast</label>
-              <Slider id="contrast" min={50} max={150} value={[contrast]} onValueChange={(v) => setContrast(v[0])} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
-              <X className="mr-2 h-4 w-4" /> Cancel
-            </Button>
-            <Button onClick={handleSend} disabled={isProcessing}>
-              <Send className="mr-2 h-4 w-4" /> {isProcessing ? 'Processing...' : 'Send for Analysis'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

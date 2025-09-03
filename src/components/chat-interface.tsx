@@ -45,6 +45,8 @@ const initialMessages: Message[] = [
   },
 ];
 
+const MAX_DIMENSION = 1024;
+
 export default function ChatInterface() {
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -78,100 +80,60 @@ export default function ChatInterface() {
     handleReset();
   }, [handleReset]);
 
-  const handleImageUpload = async (file: File, enhancedPhotoDataUri: string, region?: string) => {
-    setIsLoading(true);
-    
-    const userMessage: Message = {
-      id: nanoid(),
-      role: 'user',
+  const processAndDisplayResult = (data: IdentifyOrganismFromImageOutput) => {
+    setCurrentOrganism(data);
+    const textForTts = `I've identified this as a ${data.commonName}. Scientific name: ${
+      data.scientificName
+    }. Key features include: ${data.keyFeatures.join(', ')}. Some interesting facts are: ${data.interestingFacts.join(
+      ', '
+    )}.`;
+
+    const assistantMessageId = nanoid();
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: 'assistant',
       content: (
-        <div className='flex flex-col gap-2'>
-          <Image
-            src={enhancedPhotoDataUri}
-            alt="Uploaded organism"
-            width={200}
-            height={200}
-            className="rounded-lg"
-          />
-          {region && <p className='text-sm'>Region: {region}</p>}
-        </div>
+        <Card className="max-w-md bg-transparent border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-2xl">{data.commonName}</CardTitle>
+            <CardDescription className="italic">{data.scientificName}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Accordion type="single" collapsible className="w-full" defaultValue="features">
+              <AccordionItem value="features">
+                <AccordionTrigger>Key Features</AccordionTrigger>
+                <AccordionContent>
+                  <ul className="list-disc space-y-1 pl-4">
+                    {data.keyFeatures.map((feature, i) => (
+                      <li key={i}>{feature}</li>
+                    ))}
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="facts">
+                <AccordionTrigger>Interesting Facts</AccordionTrigger>
+                <AccordionContent>
+                  <ul className="list-disc space-y-1 pl-4">
+                    {data.interestingFacts.map((fact, i) => (
+                      <li key={i}>{fact}</li>
+                    ))}
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </CardContent>
+          <CardFooter>
+            <p className="text-xs text-muted-foreground">
+              You can now ask me follow-up questions about the {data.commonName}.
+            </p>
+          </CardFooter>
+        </Card>
       ),
     };
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((prev) => [...prev, assistantMessage]);
 
-    const { data, error } = await identifyOrganismAction({ photoDataUri: enhancedPhotoDataUri, region });
-
-    if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Identification Failed',
-        description: error,
-      });
-      const errorMessage: Message = {
-        id: nanoid(),
-        role: 'assistant',
-        content: <p>I couldn&apos;t identify the organism. Please try another image.</p>,
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-      setIsLoading(false);
-      return;
-    }
-
-    if (data) {
-      setCurrentOrganism(data);
-      const textForTts = `I've identified this as a ${data.commonName}. Scientific name: ${
-        data.scientificName
-      }. Key features include: ${data.keyFeatures.join(', ')}. Some interesting facts are: ${data.interestingFacts.join(
-        ', '
-      )}.`;
-
-      const assistantMessageId = nanoid();
-      const assistantMessage: Message = {
-        id: assistantMessageId,
-        role: 'assistant',
-        content: (
-          <Card className="max-w-md bg-transparent border-primary/20">
-            <CardHeader>
-              <CardTitle className="text-2xl">{data.commonName}</CardTitle>
-              <CardDescription className="italic">{data.scientificName}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Accordion type="single" collapsible className="w-full" defaultValue="features">
-                <AccordionItem value="features">
-                  <AccordionTrigger>Key Features</AccordionTrigger>
-                  <AccordionContent>
-                    <ul className="list-disc space-y-1 pl-4">
-                      {data.keyFeatures.map((feature, i) => (
-                        <li key={i}>{feature}</li>
-                      ))}
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="facts">
-                  <AccordionTrigger>Interesting Facts</AccordionTrigger>
-                  <AccordionContent>
-                    <ul className="list-disc space-y-1 pl-4">
-                      {data.interestingFacts.map((fact, i) => (
-                        <li key={i}>{fact}</li>
-                      ))}
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </CardContent>
-            <CardFooter>
-              <p className="text-xs text-muted-foreground">
-                You can now ask me follow-up questions about the {data.commonName}.
-              </p>
-            </CardFooter>
-          </Card>
-        ),
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-      setIsLoading(false);
-
-      // Generate speech after displaying the content
-      const speechResult = await generateSpeechAction({ text: textForTts });
+    // Generate speech after displaying the content
+    generateSpeechAction({ text: textForTts }).then(speechResult => {
       if (speechResult.data) {
         setMessages((prev) =>
           prev.map((msg) =>
@@ -185,8 +147,108 @@ export default function ChatInterface() {
           description: speechResult.error,
         });
       }
+    });
+  };
+
+  const enhanceImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = document.createElement('img');
+        img.src = e.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject(new Error('Canvas context not available'));
+
+          let { width, height } = img;
+          if (width > height) {
+            if (width > MAX_DIMENSION) {
+              height *= MAX_DIMENSION / width;
+              width = MAX_DIMENSION;
+            }
+          } else {
+            if (height > MAX_DIMENSION) {
+              width *= MAX_DIMENSION / height;
+              height = MAX_DIMENSION;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+
+          // Subtle, automated enhancement
+          ctx.filter = 'brightness(110%) contrast(110%)';
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          resolve(canvas.toDataURL(file.type, 0.9));
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+  
+  const handleImageUpload = async (file: File, dataUri: string, region?: string) => {
+    setIsLoading(true);
+    
+    const userMessage: Message = {
+      id: nanoid(),
+      role: 'user',
+      content: (
+        <div className='flex flex-col gap-2'>
+          <Image
+            src={dataUri}
+            alt="Uploaded organism"
+            width={200}
+            height={200}
+            className="rounded-lg"
+          />
+          {region && <p className='text-sm'>Region: {region}</p>}
+        </div>
+      ),
+    };
+    setMessages((prev) => [...prev, userMessage]);
+
+    // Primary Analysis
+    let { data, error } = await identifyOrganismAction({ photoDataUri: dataUri, region });
+
+    // Conditional Enhancement & Re-analysis
+    if (error) {
+      console.log('Primary analysis failed. Attempting enhancement...');
+      try {
+        const enhancedPhotoDataUri = await enhanceImage(file);
+        const secondAttempt = await identifyOrganismAction({ photoDataUri: enhancedPhotoDataUri, region });
+        data = secondAttempt.data;
+        error = secondAttempt.error;
+      } catch (enhancementError) {
+         console.error('Image enhancement failed:', enhancementError);
+         error = 'Failed to process the image. Please try a different one.';
+      }
+    }
+
+    setIsLoading(false);
+    
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Identification Failed',
+        description: 'Could not identify the organism. Please try a new photo in better lighting or from a different angle.',
+      });
+      const errorMessage: Message = {
+        id: nanoid(),
+        role: 'assistant',
+        content: <p>I couldn&apos;t identify the organism. Please try another image.</p>,
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+      return;
+    }
+
+    if (data) {
+      processAndDisplayResult(data);
     }
   };
+
 
   const handleFollowUp = async (values: z.infer<typeof followUpSchema>) => {
     if (!currentOrganism) return;
@@ -201,8 +263,8 @@ export default function ChatInterface() {
     form.reset();
 
     const previousAnswers = messages
-      .filter((m) => m.role === 'assistant' && m.audioData) // Check for audioData existence
-      .map((m) => (m.content as React.ReactElement)?.props?.children?.props?.textForTts) // Attempt to get text, may need rework
+      .filter((m) => m.role === 'assistant' && m.audioData) 
+      .map((m) => (m.content as React.ReactElement)?.props?.children?.props?.textForTts) 
       .join('\n');
 
     const { data, error } = await answerFollowUpAction({
