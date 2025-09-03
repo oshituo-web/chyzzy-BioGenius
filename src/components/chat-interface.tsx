@@ -324,7 +324,7 @@ export default function ChatInterface() {
     }
   };
 
-  const showUploadForm = !currentOrganism && !messages.some(msg => msg.role === 'user' && msg.id !== 'initial');
+  const showUploadForm = !currentOrganism && !isLoading;
 
 
   return (

@@ -13,9 +13,10 @@ interface ChatMessageProps {
   role: 'user' | 'assistant';
   content: React.ReactNode;
   audioData?: string;
+  audioAutoPlay?: boolean;
 }
 
-export default function ChatMessage({ id, role, content, audioData }: ChatMessageProps) {
+export default function ChatMessage({ id, role, content, audioData, audioAutoPlay }: ChatMessageProps) {
   const isAssistant = role === 'assistant';
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -29,6 +30,13 @@ export default function ChatMessage({ id, role, content, audioData }: ChatMessag
       setIsAudioLoading(false);
     }
   }, [isAssistant, audioData]);
+  
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio && audioData && audioAutoPlay) {
+      audio.play().catch(e => console.error("Autoplay failed", e));
+    }
+  }, [audioData, audioAutoPlay]);
   
   useEffect(() => {
     const audio = audioRef.current;
