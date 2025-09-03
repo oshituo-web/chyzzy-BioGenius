@@ -26,6 +26,7 @@ type Message = {
   role: 'user' | 'assistant';
   content: React.ReactNode;
   audioData?: string;
+  audioAutoPlay?: boolean;
 };
 
 const followUpSchema = z.object({
@@ -84,7 +85,7 @@ export default function ChatInterface() {
     setCurrentOrganism(data);
     const textForTts = `I've identified this as a ${data.commonName}. Scientific name: ${
       data.scientificName
-    }. Key features include: ${data.keyFeatures.join(', ')}. Some interesting facts are: ${data.interestingFacts.join(
+    }. It belongs to the ${data.familyName} family and the ${data.speciesName} species. Key features include: ${data.keyFeatures.join(', ')}. Some interesting facts are: ${data.interestingFacts.join(
       ', '
     )}.`;
 
@@ -99,6 +100,16 @@ export default function ChatInterface() {
             <CardDescription className="italic">{data.scientificName}</CardDescription>
           </CardHeader>
           <CardContent>
+             <div className="grid grid-cols-2 gap-2 text-sm mb-4">
+              <div>
+                <p className="font-semibold">Family</p>
+                <p>{data.familyName}</p>
+              </div>
+              <div>
+                <p className="font-semibold">Species</p>
+                <p>{data.speciesName}</p>
+              </div>
+            </div>
             <Accordion type="single" collapsible className="w-full" defaultValue="features">
               <AccordionItem value="features">
                 <AccordionTrigger>Key Features</AccordionTrigger>
@@ -137,7 +148,7 @@ export default function ChatInterface() {
       if (speechResult.data) {
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.id === assistantMessageId ? { ...msg, audioData: speechResult.data.audio } : msg
+            msg.id === assistantMessageId ? { ...msg, audioData: speechResult.data.audio, audioAutoPlay: true } : msg
           )
         );
       } else if (speechResult.error) {
@@ -300,7 +311,7 @@ export default function ChatInterface() {
       if (speechResult.data) {
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.id === assistantMessageId ? { ...msg, audioData: speechResult.data.audio } : msg
+            msg.id === assistantMessageId ? { ...msg, audioData: speechResult.data.audio, audioAutoPlay: true } : msg
           )
         );
       } else if (speechResult.error) {
