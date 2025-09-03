@@ -38,7 +38,7 @@ const initialMessages: Message[] = [
     role: 'assistant',
     content: (
       <div className="space-y-2">
-        <p>Welcome to BioGenius Pro!</p>
+        <p>Welcome to BioGenius!</p>
         <p>Upload an image of a plant, animal, or insect, and I'll identify it for you.</p>
       </div>
     ),
@@ -323,7 +323,7 @@ export default function ChatInterface() {
     <div className="flex flex-col w-full max-w-2xl h-full mx-auto bg-card rounded-lg shadow-2xl border border-primary/20 sm:h-auto sm:max-h-[90dvh]">
       <div className="flex items-center p-4 border-b border-primary/20">
         <BotIcon className="w-8 h-8 text-primary" />
-        <h1 className="text-xl font-semibold ml-3">BioGenius Pro</h1>
+        <h1 className="text-xl font-semibold ml-3">BioGenius</h1>
       </div>
 
       <ScrollArea className="flex-1 p-4" ref={chatContainerRef}>
